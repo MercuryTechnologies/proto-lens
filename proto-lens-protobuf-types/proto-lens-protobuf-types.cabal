@@ -98,8 +98,8 @@ library
       Proto.Google.Protobuf.Wrappers_Fields
   hs-source-dirs:
       src
-  build-tool-depends:
-      proto-lens-protoc:proto-lens-protoc
+  -- build-tool-depends:
+  --     proto-lens-protoc:proto-lens-protoc
   build-depends:
       base >=4.10 && <4.20
     , lens-family >=1.2 && <2.2
