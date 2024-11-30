@@ -14,6 +14,7 @@
 --
 -- See @README.md@ for instructions on how to use proto-lens with Cabal.
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Data.ProtoLens.Setup
     ( defaultMainGeneratingProtos
     , defaultMainGeneratingSpecificProtos
@@ -61,6 +62,9 @@ import Distribution.Simple.LocalBuildInfo
 #if MIN_VERSION_Cabal(3,0,0)
     , LibraryName(..)
 #endif
+#if MIN_VERSION_Cabal(3,12,0)
+    , interpretSymbolicPathLBI
+#endif
     )
 import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Simple.Setup (fromFlag, copyDest, copyVerbosity)
@@ -80,6 +84,9 @@ import Distribution.Simple
     , simpleUserHooks
     , UserHooks(..)
     )
+#if MIN_VERSION_Cabal(3,12,0)
+import Distribution.Utils.Path (getSymbolicPath, makeSymbolicPath, interpretSymbolicPath)
+#endif
 import Distribution.Verbosity
     ( Verbosity
 #if MIN_VERSION_Cabal(2,4,0)
@@ -169,8 +176,13 @@ generatingProtos root = generatingSpecificProtos root getProtos
   where
     getProtos l = do
       -- Replicate Cabal's own logic for parsing file globs.
+#if MIN_VERSION_Cabal(3,12,0)
+      let ps = map (interpretSymbolicPath Nothing) $ extraSrcFiles $ localPkgDescr l  
+      files <- concat <$> mapM (match $ localPkgDescr l) ps
+#else
       files <- concat <$> mapM (match $ localPkgDescr l)
                                (extraSrcFiles $ localPkgDescr l)
+#endif
       pure
            . filter (\f -> takeExtension f == ".proto")
            . map (makeRelative root)
@@ -178,7 +190,11 @@ generatingProtos root = generatingSpecificProtos root getProtos
            $ files
 
 match :: PackageDescription -> FilePath -> IO [FilePath]
-#if MIN_VERSION_Cabal(2,4,0)
+#if MIN_VERSION_Cabal(3,12,0)
+match desc f = do
+  ps <- matchDirFileGlob normal (specVersion desc) Nothing (makeSymbolicPath f)
+  return $ map (interpretSymbolicPath Nothing) ps
+#elif MIN_VERSION_Cabal(2,4,0)
 match desc f = matchDirFileGlob normal (specVersion desc) "." f
 #else
 match _ f = matchFileGlob f
@@ -254,7 +270,7 @@ generateSources root l files = withSystemTempDirectory "protoc-out" $ \tmpDir ->
           let sourcePath = tmpDir </> f
           sourceExists <- doesFileExist sourcePath
           when sourceExists $ do
-            let dest = autogenComponentModulesDir l compBI </> f
+            let dest = getSymbolicPath (autogenComponentModulesDir l compBI) </> f
             copyIfDifferent sourcePath dest
 
 -- Note: we do a copy rather than a move since a given module may be used in
