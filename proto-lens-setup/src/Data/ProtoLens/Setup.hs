@@ -62,7 +62,7 @@ import Distribution.Simple.LocalBuildInfo
 #if MIN_VERSION_Cabal(3,0,0)
     , LibraryName(..)
 #endif
-#if MIN_VERSION_Cabal(3,12,0)
+#if MIN_VERSION_Cabal(3,14,0)
     , interpretSymbolicPathLBI
 #endif
     )
@@ -84,7 +84,7 @@ import Distribution.Simple
     , simpleUserHooks
     , UserHooks(..)
     )
-#if MIN_VERSION_Cabal(3,12,0)
+#if MIN_VERSION_Cabal(3,14,0)
 import Distribution.Utils.Path (getSymbolicPath, makeSymbolicPath, interpretSymbolicPath)
 #endif
 import Distribution.Verbosity
@@ -176,7 +176,7 @@ generatingProtos root = generatingSpecificProtos root getProtos
   where
     getProtos l = do
       -- Replicate Cabal's own logic for parsing file globs.
-#if MIN_VERSION_Cabal(3,12,0)
+#if MIN_VERSION_Cabal(3,14,0)
       let ps = map (interpretSymbolicPath Nothing) $ extraSrcFiles $ localPkgDescr l  
       files <- concat <$> mapM (match $ localPkgDescr l) ps
 #else
@@ -190,7 +190,7 @@ generatingProtos root = generatingSpecificProtos root getProtos
            $ files
 
 match :: PackageDescription -> FilePath -> IO [FilePath]
-#if MIN_VERSION_Cabal(3,12,0)
+#if MIN_VERSION_Cabal(3,14,0)
 match desc f = do
   ps <- matchDirFileGlob normal (specVersion desc) Nothing (makeSymbolicPath f)
   return $ map (interpretSymbolicPath Nothing) ps
