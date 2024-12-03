@@ -270,7 +270,11 @@ generateSources root l files = withSystemTempDirectory "protoc-out" $ \tmpDir ->
           let sourcePath = tmpDir </> f
           sourceExists <- doesFileExist sourcePath
           when sourceExists $ do
+#if MIN_VERSION_Cabal(3,14,0)
             let dest = getSymbolicPath (autogenComponentModulesDir l compBI) </> f
+#else
+            let dest = autogenComponentModulesDir l compBI </> f
+#endif
             copyIfDifferent sourcePath dest
 
 -- Note: we do a copy rather than a move since a given module may be used in
